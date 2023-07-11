@@ -1,0 +1,38 @@
+<h1>Messages</h1>
+
+<div id="messages">
+  <%= render @messages %>
+</div>
+
+<%= form_with(model: Message.new, id: 'message-form') do |form| %>
+  <%= form.text_field :content %>
+  <%= form.submit "Send" %>
+<% end %>
+
+<script src="<%= javascript_path 'action_cable' %>"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('message-form');
+        const messagesContainer = document.getElementById('messages');
+
+        // Connect to the chat channel
+        const cable = ActionCable.createConsumer();
+        const chatChannel = cable.subscriptions.create('ChatChannel', {
+            received: function(data) {
+                const newMessage = document.createElement('p');
+                newMessage.textContent = data.content;
+                messagesContainer.appendChild(newMessage);
+            }
+        });
+
+        // Send message when the form is submitted
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            const message = formData.get('message[content]');
+            chatChannel.send({ content: message });
+            form.reset();
+        });
+    });
+</script>
+
